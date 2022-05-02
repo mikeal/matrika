@@ -54,9 +54,8 @@ const lsCommand = async argv => {
   } else {
     getBlock = getBlockGateway
   }
-  for await (const key of ls({ getBlock, db: argv.root })) {
-    console.log(key)
-  }
+  const { result, cids } = await ls({ getBlock, db: argv.root })
+  console.log(result.join('\n'))
 }
 
 const defaults = yargs => {

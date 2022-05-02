@@ -12,14 +12,12 @@ const update = async function * ({db, changes, ...options}) {
   yield * transform({ db, changes, ...options })
 }
 
-const query = async function * ({ db, start, end, getBlock }) {
+const ls = async ({ db, getBlock }) => {
   const node = await mapLoader({ db, getBlock })
-  let iter = await node.getRangeEntries(start, end) 
-  console.log(iter)
-  return
-  for await (const node of iter) {
-    console.log(node)
-  }
+  let { cids, result } = await node.getAllEntries() 
+  cids = cids._cids
+  result = result.map(r => r.key)
+  return { cids, result }
 }
 
-export { create, update, query }
+export { create, update, ls }
