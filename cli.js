@@ -6,6 +6,8 @@ import { hideBin } from 'yargs/helpers'
 import { CarReader, CarWriter } from '@ipld/car'
 import { Readable } from 'stream'
 import { CID } from 'multiformats'
+import prettyjson from 'prettyjson'
+import { prepare } from './sugar.js'
 
 import * as codec from '@ipld/dag-cbor'
 import { sha256 as hasher } from 'multiformats/hashes/sha2'
@@ -55,7 +57,14 @@ const lsCommand = async argv => {
     getBlock = getBlockGateway
   }
   const { result, cids } = await ls({ getBlock, db: argv.root })
-  console.log(result.join('\n'))
+  for (const r of result) {
+    if (argv.renderValues) {
+      r.value = prepare(await r.value())
+    } else {
+      r.value = r.value.cid
+    }
+    console.log(r)
+  }
 }
 
 const defaults = yargs => {
@@ -65,7 +74,12 @@ const defaults = yargs => {
   })
   yargs.option('root', {
     describe: 'Root CID to use in the given command',
-    alias: 'r'
+    alias: 'c'
+  })
+  yargs.option('renderValues', {
+    describe: 'Rather than printing CIDs, retrieve the block values and render them',
+    type: 'boolean',
+    default: false
   })
 }
 
