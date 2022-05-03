@@ -4,7 +4,7 @@ import { create, update, ls, get, set } from '../src/kv.js'
 import yargs from 'yargs'
 import { CID } from 'multiformats'
 import { prepare } from '../src/sugar.js'
-import { mayberun, fixargv, reader, output, defaults, writeProof } from './utils.js'
+import { mayberun, fixargv, reader, output, readDefaults, writeDefaults, writeProof } from './utils.js'
 import { encode, decode } from '../src/ipld.js'
 
 const createCommand = async argv => {
@@ -60,6 +60,7 @@ const setCommand = async argv => {
 }
 
 const createOpts = yargs => {
+  writeDefaults(yargs)
   // TODO: implement targetSize
 }
 
@@ -67,9 +68,9 @@ const commands = () => {
   const argv = fixargv()
   yargs(argv)
     .command('kv-create <json>', 'Create new database from JSON string map', createOpts, createCommand)
-    .command('kv-ls [start] [end]', 'List the keys in a database', defaults, lsCommand) 
-    .command('kv-get <key>', 'Read single key', defaults, getCommand)
-    .command('kv-set <key> <value-json>', 'Write single key', defaults, setCommand)
+    .command('kv-ls [start] [end]', 'List the keys in a database', readDefaults, lsCommand) 
+    .command('kv-get <key>', 'Read single key', readDefaults, getCommand)
+    .command('kv-set <key> <value-json>', 'Write single key', writeDefaults, setCommand)
     .demandCommand(1)
     .parse()
 }

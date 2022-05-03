@@ -42,22 +42,6 @@ const output = async (argv, blocks) => {
   close()
 }
 
-const defaults = yargs => {
-  yargs.option('input', {
-    describe: 'CAR file input',
-    alias: 'i'
-  })
-  yargs.option('root', {
-    describe: 'Root CID to use in the given command',
-    alias: 'c'
-  })
-  yargs.option('renderValues', {
-    describe: 'Rather than printing CIDs, retrieve the block values and render them',
-    type: 'boolean',
-    default: false
-  })
-}
-
 const writeProof = async ({ blocks, cids, getBlock, root }) => {
   const { put, close, stream } = await writer(root)
   if (!argv.outfile) {
@@ -74,4 +58,36 @@ const writeProof = async ({ blocks, cids, getBlock, root }) => {
   close()
 }
 
-export { mayberun, fixargv, reader, output, defaults, writeProof }
+const defaults = yargs => {
+  yargs.option('input', {
+    describe: 'CAR file input',
+    alias: 'i'
+  })
+  yargs.option('root', {
+    describe: 'Root CID to use in the given command',
+    alias: 'c'
+  })
+  yargs.option('outfile', {
+    describe: 'Output CAR file to the given path. Defaults to stdout.',
+    alias: 'o'
+  })
+}
+
+const readDefaults = yargs => {
+  defaults(yargs)
+  yargs.option('renderValues', {
+    describe: 'Rather than printing CIDs, retrieve the block values and render them',
+    type: 'boolean',
+    default: false
+  })
+  yargs.option('proof', {
+    descibe: 'Output an IPLD proof w/ result as a CAR file',
+    type: 'boolean',
+    default: false
+  })
+}
+const writeDefaults = yargs => {
+  defaults(yargs)
+}
+
+export { mayberun, fixargv, reader, output, readDefaults, writeDefaults, writeProof }
