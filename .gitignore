@@ -1,0 +1,12 @@
+.nyc_output
+build
+dist
+coverage
+package-lock.json
+node_modules
+.DS_Store
+yarn.lock
+types
+test/ts-use/tsconfig.tsbuildinfo
+test/tsconfig.tsbuildinfo
+test.car

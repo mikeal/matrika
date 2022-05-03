@@ -1,6 +1,8 @@
 import { hideBin } from 'yargs/helpers'
 import { mkGetBlock } from '../src/ipld.js'
 import { CID } from 'multiformats'
+import { writer } from '../src/ipld.js'
+import { createWriteStream } from 'fs'
 
 const mayberun = (process, meta, fn) => {
   const f = process.argv[1]
@@ -26,4 +28,50 @@ const reader = async (input, root) => {
   return { root, getBlock }
 }
 
-export { mayberun, fixargv, reader }
+const output = async (argv, blocks) => {
+  const root = blocks[blocks.length -1]
+  const { put, close, stream } = await writer(root.cid)
+  if (!argv.outfile) {
+    stream.pipe(process.stdout)
+  } else {
+    stream.pipe(createWriteStream(argv.outfile))
+  }
+  for (const block of blocks) {
+    put(block)
+  }
+  close()
+}
+
+const defaults = yargs => {
+  yargs.option('input', {
+    describe: 'CAR file input',
+    alias: 'i'
+  })
+  yargs.option('root', {
+    describe: 'Root CID to use in the given command',
+    alias: 'c'
+  })
+  yargs.option('renderValues', {
+    describe: 'Rather than printing CIDs, retrieve the block values and render them',
+    type: 'boolean',
+    default: false
+  })
+}
+
+const writeProof = async ({ blocks, cids, getBlock, root }) => {
+  const { put, close, stream } = await writer(root)
+  if (!argv.outfile) {
+    stream.pipe(process.stdout)
+  } else {
+    stream.pipe(createWriteStream(argv.outfile))
+  }
+  const promises = []
+  for (const block of blocks) {
+    promises.push(put(block))
+  }
+  ;[ ...cids ].forEach(cid => promises.push(getBlock(cid).then(put)))
+
+  close()
+}
+
+export { mayberun, fixargv, reader, output, defaults, writeProof }
