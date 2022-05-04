@@ -1,18 +1,23 @@
 /* globals describe, it, before */
+import assert from 'assert'
+
 import { create, ls } from '../src/kv.js'
 
-import assert from 'assert'
+const fixtureMap = { a: 10, b: 20 }
 
 describe('errors', () => {
   it('must have targetSize > 1', async () => {
-    await assert.rejects(async () =>
-      create({}, 1)
-    , 'RangeError')
+    await assert.rejects(
+      async () => {
+        for await (const block of create(fixtureMap, 1)) {
+          console.log(block.cid)
+        }
+      }
+      , 'RangeError')
   })
 })
 
 describe('base', () => {
-  const fixtureMap = { a: 10, b: 20 }
   const blocks = []
   const blockMap = {}
 
