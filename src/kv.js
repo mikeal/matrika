@@ -64,7 +64,7 @@ const mapLoader = async ({ kv, getBlock }) => {
 
 const prepareMap = o => Object.keys(o).map(k => ({ key: k, value: prepare(o[k]) }))
 
-const targetSize = 3 // TODO: don't ship with this default
+const DEFAULT_TARGET_SIZE = 3 // TODO: don't ship with this default
 
 const trycid = string => {
   try {
@@ -74,7 +74,10 @@ const trycid = string => {
   }
 }
 
-const create = async function * (map) {
+const create = async function * (map, targetSize = DEFAULT_TARGET_SIZE) {
+  if (targetSize < 2) {
+    throw new RangeError("targetSize must be greater than 1")
+  }
   const changes = []
   for (const [key, value] of Object.entries(map)) {
     let cid = trycid(value)
@@ -148,7 +151,7 @@ const ls = async ({ kv, getBlock, start, end, includeValues }) => {
   } else {
     result = await Promise.all(result.map(async r => {
       const block = await getBlock(r.value)
-      cids.add(block.cid)
+      cids.add(block.cid.toString())
       return { key: r.key, value: decorate(getBlock, block.value) }
     }))
   }
