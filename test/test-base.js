@@ -116,13 +116,11 @@ describe('base', () => {
     before('do the set', async () => {
       for await (const block of set({ getBlock, kv: rootCID, key: 'c', value: '30' })) {
         setBlocks.push(block)
-        console.log(block.value)
       }
     })
     it('yields new blocks', () => {
       assert.equal(setBlocks.length, 4)
       assert.equal(setBlocks[0].value, 30)
-    //   console.log(setBlocks[2])
     })
 
     it('yields new inner', () => {
