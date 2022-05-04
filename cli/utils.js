@@ -1,8 +1,9 @@
 import { hideBin } from 'yargs/helpers'
-import { mkGetBlock } from '../src/ipld.js'
+import { mkGetBlock, getBlockGateway } from '../src/ipld.js'
 import { CID } from 'multiformats'
 import { writer } from '../src/ipld.js'
 import { createWriteStream } from 'fs'
+import bent from 'bent'
 
 const mayberun = (process, meta, fn) => {
   const f = process.argv[1]
@@ -23,26 +24,45 @@ const fixargv = () => {
 
 const reader = async (input, root) => {
   if (typeof root === 'string') {
-    console.log({ root })
     root = CID.parse(root)
   }
-  const { getBlock, root: carRoot } = await mkGetBlock(input)
-  if (!root) root = carRoot
+  let getBlock
+  if (input) {
+    const r =  await mkGetBlock(input)
+    getBlock = r.getBlock
+    if (!root) root = r.root 
+  } else {
+    if (!root) throw new Error('Must pass a root if not providing a CAR file')
+    getBlock = getBlockGateway
+  }
   return { root, getBlock }
 }
+
+const post = bent('POST', 'json')
+const w3s = 'https://api.web3.storage/car'
 
 const output = async (argv, blocks) => {
   const root = blocks[blocks.length -1]
   const { put, close, stream } = await writer(root.cid)
-  if (!argv.outfile) {
-    stream.pipe(process.stdout)
-  } else {
+  let response
+  if (argv.outfile) {
     stream.pipe(createWriteStream(argv.outfile))
+  } else if (argv.publish) { 
+    const token = process.env.W3S_API_TOKEN
+    if (!token) throw new Error('Must set W3S_API_TOKEN env variable to publish to web3.storage')
+    const headers = { Authorization: `Bearer ${token}` }
+    response = post(w3s, stream, headers)
+  } else {
+    stream.pipe(process.stdout)
   }
   for (const block of blocks) {
     put(block)
   }
   close()
+  if (response) {
+    const res = await response
+    console.log(res)
+  }
 }
 
 const writeProof = async ({ blocks, cids, getBlock, root, argv }) => {
@@ -75,6 +95,12 @@ const defaults = yargs => {
   yargs.option('outfile', {
     describe: 'Output CAR file to the given path. Defaults to stdout.',
     alias: 'o'
+  })
+  yargs.option('publish', {
+    describe: 'Write CAR file to web3.storage. Must set W3S_API_TOKEN env variable.',
+    type: 'boolean',
+    default: false,
+    alias: 'p'
   })
 }
 

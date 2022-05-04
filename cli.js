@@ -1,5 +1,6 @@
 #!/bin/env node
 import kv from './cli/kv.js'
+import car from './cli/car.js'
 import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
 
@@ -10,6 +11,6 @@ if (argv.length !== 0) {
 
 yargs(argv)
   .command('kv [subcommand]', 'Key-Value Store Operations', () => {}, kv)
+  .command('car [subcommand]', 'CAR file utilities', () => {}, car)
   .demandCommand(1)
   .parse()
-

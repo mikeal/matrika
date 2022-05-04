@@ -5,6 +5,7 @@ import { Readable } from 'stream'
 import { CID } from 'multiformats'
 import { bytes as byteslib } from 'multiformats'
 import { decode as digest } from 'multiformats/hashes/digest'
+import bent from 'bent'
 
 import * as dagcbor from '@ipld/dag-cbor'
 import * as raw from 'multiformats/codecs/raw'
@@ -23,7 +24,7 @@ const encode = value => {
 const decode = (bytes, cid) => {
   let hasher, codec
   const { code } = cid
-  const hashcode = digest(cid.multihash).code
+  const hashcode = cid.multihash.code || digest(cid.multihash).code
 
   if (hashcode === 0x12) {
     hasher = sha256
@@ -40,10 +41,15 @@ const decode = (bytes, cid) => {
     throw new Error('Unsupported codec: ' + code)
   }
 
-  return Block.decode({ bytes, cide, codec, hasher })
+  return Block.decode({ bytes, cid, codec, hasher })
 }
 
-const getBlockGateway = () => { throw new Error('Not Implemented') }
+const gwget = bent('buffer', 'https://ipfs.io/api/v0/block/get/')
+
+const getBlockGateway = async cid => { 
+  const bytes = await gwget(cid.toString())
+  return decode(bytes, cid)
+}
 
 const mkGetBlock = async input => {
   const reader = await CarReader.fromBytes(readFileSync(input))
@@ -52,11 +58,7 @@ const mkGetBlock = async input => {
     if (typeof cid === 'string') cid = CID.parse(cid)
     if (await reader.has(cid)) {
       const { bytes } = await reader.get(cid)
-      if (cid.code === 113) {
-        return Block.create({ bytes, codec: dagcbor, cid, hasher: sha256 })
-      } else {
-        return { bytes, cid }
-      }
+      return decode(bytes, cid)
     }
     return getBlockGateway(cid)
   }
@@ -74,4 +76,4 @@ const writer = async (cid, filename) => {
   return { put, close, stream }
 }
 
-export { encode, decode, mkGetBlock, writer }
+export { encode, decode, mkGetBlock, writer, getBlockGateway }
