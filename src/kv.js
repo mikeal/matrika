@@ -1,7 +1,7 @@
 import { prepare, decorate } from './sugar.js'
 import { CID } from 'multiformats'
 import { encode } from './ipld.js'
-import { create as createMap, load } from 'chunky-trees/map'
+import { create as createMap, load } from 'prolly-trees/map'
 import { deepStrictEqual as same } from 'assert'
 import { treeopts, bf } from './util.js'
 
