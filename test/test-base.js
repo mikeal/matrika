@@ -3,6 +3,14 @@ import { create, ls } from '../src/kv.js'
 
 import assert from 'assert'
 
+describe('errors', () => {
+  it('must have targetSize > 1', async () => {
+    await assert.rejects(async () =>
+      create({}, 1)
+    , 'RangeError')
+  })
+})
+
 describe('base', () => {
   const fixtureMap = { a: 10, b: 20 }
   const blocks = []

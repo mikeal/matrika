@@ -74,6 +74,7 @@ const trycid = string => {
 }
 
 const create = async function * (map, targetSize = DEFAULT_TARGET_SIZE) {
+  if (targetSize < 2) throw ( new RangeError("targetSize must be greater than 1"))
   const changes = []
   for (const [key, value] of Object.entries(map)) {
     let cid = trycid(value)
