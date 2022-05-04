@@ -87,14 +87,16 @@ const create = async function * (map) {
   yield * transform({ changes, targetSize })
 }
 
-const update = async function * ({kv, changes, ...options}) {
-  changes = Object.keys(o).map(k => ({ key: k, value: prepare(o[k]) }))
-  for (const change of changes) {
-    const value = change.value
-    let cid
-    if (typeof value == 'string') {
-      cid = trycid(value)
+const update = async function * ({kv, prev, changes, ...options}) {
+  if (prev) {
+    // TODO: find changes delta and throw on conflicts
+  }
+  for (const { value, key, del } of changes) {
+    if (await has({ key, kv, getBlock })) {
+
     }
+
+    const value = prepare(change.value)
     if (!cid) {
       const block = await encode(value)
       yield block
@@ -105,19 +107,34 @@ const update = async function * ({kv, changes, ...options}) {
   yield * transform({ kv, changes, ...options })
 }
 
-const ls = async ({ kv, getBlock, start, end }) => {
+const ls = async ({ kv, getBlock, start, end, includeValues }) => {
   const node = await mapLoader({ kv, getBlock })
+  let cids, result
   if (start) {
-    let { cids, result } = await node.getRangeEntries(start, end) 
-    cids = cids._cids
-    result = result.map(r => ({ key: r.key, value: decorate(getBlock, r.value) }))
-    return { cids, result }
+    const r = await node.getRangeEntries(start, end) 
+    cids = r.cids._cids
+    result = r.result
   } else {
-    let { cids, result } = await node.getAllEntries() 
-    cids = cids._cids
-    result = result.map(r => ({ key: r.key, value: decorate(getBlock, r.value) }))
-    return { cids, result }
+    const r = await node.getAllEntries() 
+    cids = r.cids._cids
+    result = r.result
   }
+  cids.add(node.block.cid.toString())
+  cids.add(kv.toString())
+  if (!includeValues) {
+    result = result.map(r => ({ key: r.key, value: decorate(getBlock, r.value) }))
+  } else {
+    result = await Promise.all(result.map(async r => {
+      const block = await getBlock(r.value)
+      cids.add(block.cid)
+      return { key: r.key, value: decorate(getBlock, block.value) }
+    }))
+  }
+  return { cids, result }
+}
+
+const has = async opts => {
+
 }
 
 const get = async ({ key, kv, getBlock }) => {

@@ -19,10 +19,11 @@ const createCommand = async argv => {
 const lsCommand = async argv => {
   const { getBlock, root } = await reader(argv.input, argv.root)
   const { start, end } = argv
-  const { result, cids } = await ls({ getBlock, kv: root, start, end })
+  const includeValues = argv.renderValues
+  const { result, cids } = await ls({ getBlock, kv: root, start, end, includeValues })
   for (const r of result) {
     if (argv.renderValues) {
-      r.value = prepare(await r.value())
+      r.value = prepare(r.value)
     } else {
       r.value = r.value.cid
     }
