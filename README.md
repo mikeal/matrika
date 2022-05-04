@@ -16,6 +16,11 @@ The main interface at this time is the CLI. Commands are namespaced into the fol
 
 ## Key Value Store
 
+The key value store is an append only log of changes to a map (implemented as a prolly tree).
+
+It is an efficient key value store that scales to an indefinite size. Concurrent changes
+between different actors can be reconciled and *most* conflicts automatically resolved.
+
 ```
 cli.js <command>
 

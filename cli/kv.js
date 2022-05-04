@@ -56,6 +56,7 @@ const getCommand = async argv => {
 const setCommand = async argv => {
   const { getBlock, root } = await reader(argv.input, argv.root)
   const blocks = []
+  const value = JSON.parse(argv['value-json'])
   for await (const block of set({ getBlock, kv: root, key: argv.key, value })) {
     blocks.push(block)
   }

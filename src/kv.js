@@ -58,6 +58,7 @@ const transform = async function * ({ kv, changes, getBlock, targetSize }) {
 
 const mapLoader = async ({ kv, getBlock }) => {
   const block = await getBlock(kv)
+  if (!block.value.map) throw new Error('Not a kv ' + kv)
   return load({ cid: block.value.map, get: getBlock, chunker: bf(block.value.targetSize), ...treeopts })
 }
 
@@ -87,24 +88,45 @@ const create = async function * (map) {
   yield * transform({ changes, targetSize })
 }
 
-const update = async function * ({kv, prev, changes, ...options}) {
+const update = async function * ({ kv, prev, getBlock, changes, ...options }) {
+  const head = await getBlock(kv)
+  const { targetSize } = head.value
+  const chunker = bf(targetSize)
+  const node = await load({ cid: head.value.map, get: getBlock, chunker, ...treeopts })
   if (prev) {
     // TODO: find changes delta and throw on conflicts
+    throw new Error('not implemented')
   }
-  for (const { value, key, del } of changes) {
-    if (await has({ key, kv, getBlock })) {
 
-    }
-
-    const value = prepare(change.value)
-    if (!cid) {
+  for (const c of changes ) {
+    let { key, value, del } = c
+    value = prepare(value)
+    if (!CID.asCID(value)) {
       const block = await encode(value)
+      value = block.cid
       yield block
-      cid = block.cid
     }
-    change.value = cid
+    c.value = value
   }
-  yield * transform({ kv, changes, ...options })
+
+  const result = await node.bulk(changes)
+
+  const { fromEntries, values } = Object
+
+  const blocks = values(fromEntries(result.blocks.map(b => [ b.cid.toString(), b ])))
+  yield * blocks
+
+  const changesBlock = await encode(changes)
+  yield changesBlock
+  
+  const newHead = await encode({
+    _type: 'matrika:kv:v1',
+    prev: kv,
+    map: await result.root.address,
+    changes: changesBlock.cid,
+    targetSize
+  })
+  yield newHead
 }
 
 const ls = async ({ kv, getBlock, start, end, includeValues }) => {
@@ -142,7 +164,9 @@ const get = async ({ key, kv, getBlock }) => {
   const { result } = await node.get(key)
   return decorate(getBlock, result)
 }
-const set = async ({ key, value, kv, getBlock }) => {
+const set = async function * ({ key, value, kv, getBlock, prev }) {
+  const changes = [ { key, value } ]
+  yield * update({ changes, kv, getBlock, prev })
 }
 
 export { create, update, ls, get, set }
