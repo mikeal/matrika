@@ -1,7 +1,7 @@
 /* globals describe, it, before */
 import assert from 'assert'
 
-import { create, ls } from '../src/kv.js'
+import { create, ls, get, set } from '../src/kv.js'
 
 const fixtureMap = { a: 10, b: 20 }
 
@@ -20,12 +20,15 @@ describe('errors', () => {
 describe('base', () => {
   const blocks = []
   const blockMap = {}
+  const getBlock = async (cid) => blockMap[cid.toString()]
+  let rootCID
 
   before('create blocks', async () => {
     for await (const block of create(fixtureMap, 3)) {
       blocks.push(block)
       blockMap[block.cid.toString()] = block
     }
+    rootCID = blocks[4].cid
   })
 
   it('create values', () => {
@@ -52,13 +55,12 @@ describe('base', () => {
   it('create root', () => {
     const root = blocks[4].value
     assert.equal(root.targetSize, 3)
+    assert.equal(root._type, 'matrika:kv:v1')
   })
 
   describe('list all', () => {
-    let list, rootCID
+    let list
     before('make list', async () => {
-      rootCID = blocks[4].cid
-      const getBlock = async (cid) => blockMap[cid.toString()]
       list = await ls({ getBlock, kv: rootCID })
     })
     it('result keys', () => {
@@ -78,10 +80,8 @@ describe('base', () => {
   })
 
   describe('list all includeValues', () => {
-    let list, rootCID
+    let list
     before('make list', async () => {
-      rootCID = blocks[4].cid
-      const getBlock = async (cid) => blockMap[cid.toString()]
       list = await ls({ getBlock, kv: rootCID, includeValues: true })
     })
     it('result keys', () => {
@@ -99,6 +99,49 @@ describe('base', () => {
       assert(list.cids.has(blocks[1].cid.toString()))
       assert(list.cids.has(blocks[2].cid.toString()))
       assert(list.cids.has(blocks[4].cid.toString()))
+    })
+  })
+
+  describe('get key', () => {
+    it('returns the value getter', async () => {
+      const result = await get({ getBlock, kv: rootCID, key: 'a' })
+      const ogBlock = blockMap[result.cid.toString()]
+      const value = await result()
+      assert.equal(ogBlock.value, value)
+    })
+  })
+
+  describe('set key', () => {
+    const setBlocks = []
+    before('do the set', async () => {
+      for await (const block of set({ getBlock, kv: rootCID, key: 'c', value: '30' })) {
+        setBlocks.push(block)
+        console.log(block.value)
+      }
+    })
+    it('yields new blocks', () => {
+      assert.equal(setBlocks.length, 4)
+      assert.equal(setBlocks[0].value, 30)
+    //   console.log(setBlocks[2])
+    })
+
+    it('yields new inner', () => {
+      const inner = setBlocks[1].value
+      assert.equal(inner.leaf.length, 3)
+      assert.equal(inner.leaf[2][0], 'c')
+      assert.equal(inner.closed, false)
+    })
+
+    it('yields changes', () => {
+      const changes = setBlocks[setBlocks.length - 2].value
+      assert.equal(changes.length, 1)
+      assert.equal(changes[0].key, 'c')
+    })
+
+    it('yields new root', () => {
+      const rootBlock = setBlocks[setBlocks.length - 1].value
+      assert.equal(rootBlock.targetSize, 3)
+      assert.equal(rootBlock._type, 'matrika:kv:v1')
     })
   })
 })
