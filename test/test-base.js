@@ -3,7 +3,7 @@ import assert from 'assert'
 
 import { create, ls, get, set } from '../src/kv.js'
 
-const fixtureMap = { a: 10, b: 20 }
+const fixtureMap = { a: 10, b: 20, d: 40, e: 50 }
 
 describe('errors', () => {
   it('must have targetSize > 1', async () => {
@@ -27,33 +27,40 @@ describe('base', () => {
     for await (const block of create(fixtureMap, 3)) {
       blocks.push(block)
       blockMap[block.cid.toString()] = block
+    //   console.log(block.cid)
     }
-    rootCID = blocks[4].cid
+    rootCID = blocks[blocks.length - 1].cid
   })
 
   it('create values', () => {
-    assert.equal(blocks.length, 5)
+    assert.equal(blocks.length, 7)
     assert.equal(blocks[0].value, fixtureMap.a)
     assert.equal(blocks[1].value, fixtureMap.b)
+    assert.equal(blocks[2].value, fixtureMap.d)
+    assert.equal(blocks[3].value, fixtureMap.e)
   })
 
   it('create inner', () => {
-    const inner = blocks[2].value
+    const inner = blocks[4].value
     const leaf = inner.leaf
-    assert.equal(inner.closed, false)
-    assert.equal(leaf.length, 2)
+    assert.equal(inner.closed, true)
+    assert.equal(leaf.length, 4)
     assert.equal(leaf[0][0], 'a')
     assert.equal(leaf[1][0], 'b')
+    assert.equal(leaf[2][0], 'd')
+    assert.equal(leaf[3][0], 'e')
   })
 
   it('create changes', () => {
-    const changes = blocks[3].value
+    const changes = blocks[5].value
     assert.equal(changes[0].key, 'a')
     assert.equal(changes[1].key, 'b')
+    assert.equal(changes[2].key, 'd')
+    assert.equal(changes[3].key, 'e')
   })
 
   it('create root', () => {
-    const root = blocks[4].value
+    const root = blocks[6].value
     assert.equal(root.targetSize, 3)
     assert.equal(root._type, 'matrika:kv:v1')
   })
@@ -64,18 +71,22 @@ describe('base', () => {
       list = await ls({ getBlock, kv: rootCID })
     })
     it('result keys', () => {
-      assert.equal(list.result.length, 2)
+      assert.equal(list.result.length, 4)
       assert.equal(list.result[0].key, 'a')
       assert.equal(list.result[1].key, 'b')
+      assert.equal(list.result[2].key, 'd')
+      assert.equal(list.result[3].key, 'e')
     })
     it('result value functions', async () => {
       assert.equal(await list.result[0].value(), 10)
       assert.equal(await list.result[1].value(), 20)
+      assert.equal(await list.result[2].value(), 40)
+      assert.equal(await list.result[3].value(), 50)
     })
     it('result cid set', () => {
       assert.equal(list.cids.size, 2)
-      assert(list.cids.has(blocks[2].cid.toString()))
       assert(list.cids.has(blocks[4].cid.toString()))
+      assert(list.cids.has(blocks[6].cid.toString()))
     })
   })
 
@@ -85,20 +96,26 @@ describe('base', () => {
       list = await ls({ getBlock, kv: rootCID, includeValues: true })
     })
     it('result keys', () => {
-      assert.equal(list.result.length, 2)
+      assert.equal(list.result.length, 4)
       assert.equal(list.result[0].key, 'a')
       assert.equal(list.result[1].key, 'b')
+      assert.equal(list.result[2].key, 'd')
+      assert.equal(list.result[3].key, 'e')
     })
     it('result values', async () => {
       assert.equal(await list.result[0].value, 10)
       assert.equal(await list.result[1].value, 20)
+      assert.equal(await list.result[2].value, 40)
+      assert.equal(await list.result[3].value, 50)
     })
     it('result cid set', () => {
-      assert.equal(list.cids.size, 4)
+      assert.equal(list.cids.size, 6)
       assert(list.cids.has(blocks[0].cid.toString()))
       assert(list.cids.has(blocks[1].cid.toString()))
       assert(list.cids.has(blocks[2].cid.toString()))
+      assert(list.cids.has(blocks[3].cid.toString()))
       assert(list.cids.has(blocks[4].cid.toString()))
+      assert(list.cids.has(blocks[6].cid.toString()))
     })
   })
 
@@ -113,10 +130,12 @@ describe('base', () => {
 
   describe('set key', () => {
     const setBlocks = []
+    let rootBlock
     before('do the set', async () => {
       for await (const block of set({ getBlock, kv: rootCID, key: 'c', value: '30' })) {
         setBlocks.push(block)
       }
+      rootBlock = setBlocks[setBlocks.length - 1].value
     })
     it('yields new blocks', () => {
       assert.equal(setBlocks.length, 4)
@@ -125,9 +144,9 @@ describe('base', () => {
 
     it('yields new inner', () => {
       const inner = setBlocks[1].value
-      assert.equal(inner.leaf.length, 3)
+      assert.equal(inner.leaf.length, 5)
       assert.equal(inner.leaf[2][0], 'c')
-      assert.equal(inner.closed, false)
+      assert.equal(inner.closed, true)
     })
 
     it('yields changes', () => {
@@ -137,7 +156,6 @@ describe('base', () => {
     })
 
     it('yields new root', () => {
-      const rootBlock = setBlocks[setBlocks.length - 1].value
       assert.equal(rootBlock.targetSize, 3)
       assert.equal(rootBlock._type, 'matrika:kv:v1')
     })
