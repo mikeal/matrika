@@ -74,9 +74,7 @@ const trycid = string => {
 }
 
 const create = async function * (map, targetSize = DEFAULT_TARGET_SIZE) {
-  console.log("targetSize", targetSize)
   if (targetSize < 2) {
-    console.log("throw error")
     throw new RangeError("targetSize must be greater than 1")
   }
   const changes = []
