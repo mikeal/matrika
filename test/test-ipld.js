@@ -32,14 +32,14 @@ describe('ipld', () => {
     })
     it('put', async () => {
       const r = await w.put(block)
-      console.log(r)
+    //   console.log(r)
     })
     it('close', async () => {
       const cl = await w.close()
-      console.log(cl)
+    //   console.log(cl)
     })
     it('stream', async () => {
-      console.log(w.stream)
+    //   console.log(w.stream)
     })
   })
 
