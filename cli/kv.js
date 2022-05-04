@@ -43,15 +43,17 @@ const lsCommand = async argv => {
 }
 
 const getCommand = async argv => {
-  const { getBlock, root } = reader(argv.root, argv.input)
-  let value = await get({ getBlock, kv: root })
+  const { getBlock, root } = await reader(argv.input, argv.root)
+  let value = await get({ getBlock, kv: root, key: argv.key })
   if (argv.renderValues) {
-    value = await getBlock(value) 
+    value = await value()
+  } else {
+    value = value.cid
   }
   console.log(value)
 }
 const setCommand = async argv => {
-  const { getBlock, root } = reader(argv.root, argv.input)
+  const { getBlock, root } = await reader(argv.input, argv.root)
   const blocks = []
   for await (const block of set({ getBlock, kv: root, key: argv.key, value })) {
     blocks.push(block)

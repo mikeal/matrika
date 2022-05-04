@@ -22,7 +22,10 @@ const fixargv = () => {
 }
 
 const reader = async (input, root) => {
-  if (root) root = CID.parse(root)
+  if (typeof root === 'string') {
+    console.log({ root })
+    root = CID.parse(root)
+  }
   const { getBlock, root: carRoot } = await mkGetBlock(input)
   if (!root) root = carRoot
   return { root, getBlock }

@@ -50,7 +50,6 @@ const mkGetBlock = async input => {
   const roots = await reader.getRoots()
   const getBlock = async cid => {
     if (typeof cid === 'string') cid = CID.parse(cid)
-    console.log({ cid })
     if (await reader.has(cid)) {
       const { bytes } = await reader.get(cid)
       if (cid.code === 113) {

@@ -45,7 +45,13 @@ const transform = async function * ({ kv, changes, getBlock, targetSize }) {
   put(changesBlock)
   yield changesBlock
   
-  const head = await encode({ prev: kv, map: await root.address, changes: changesBlock.cid, targetSize })
+  const head = await encode({
+    _type: 'matrika:kv:v1',
+    prev: kv,
+    map: await root.address,
+    changes: changesBlock.cid,
+    targetSize
+  })
   put(head)
   yield head
 }
@@ -114,7 +120,12 @@ const ls = async ({ kv, getBlock, start, end }) => {
   }
 }
 
-const get = () => {}
-const set = () => {}
+const get = async ({ key, kv, getBlock }) => {
+  const node = await mapLoader({ kv, getBlock })
+  const { result } = await node.get(key)
+  return decorate(getBlock, result)
+}
+const set = async ({ key, value, kv, getBlock }) => {
+}
 
 export { create, update, ls, get, set }
