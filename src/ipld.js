@@ -2,8 +2,7 @@ import { readFileSync } from 'fs'
 import yargs from 'yargs'
 import { CarReader, CarWriter } from '@ipld/car'
 import { Readable } from 'stream'
-import { CID } from 'multiformats'
-import { bytes as byteslib } from 'multiformats'
+import { CID, bytes as byteslib } from 'multiformats'
 import { decode as digest } from 'multiformats/hashes/digest'
 import bent from 'bent'
 
@@ -24,14 +23,13 @@ const encode = value => {
 const decode = (bytes, cid) => {
   let hasher, codec
   const { code } = cid
-  const hashcode = cid.multihash.code || digest(cid.multihash).code
+  const hashcode = cid.multihash.code || digest(cid.multihash.bytes).code
 
   if (hashcode === 0x12) {
     hasher = sha256
   } else {
     throw new Error('Unsupported hash function: ' + hashcode)
   }
-
 
   if (code === 0x71) {
     codec = dagcbor
@@ -46,7 +44,7 @@ const decode = (bytes, cid) => {
 
 const gwget = bent('buffer', 'https://ipfs.io/api/v0/block/get/')
 
-const getBlockGateway = async cid => { 
+const getBlockGateway = async cid => {
   const bytes = await gwget(cid.toString())
   return decode(bytes, cid)
 }
@@ -65,12 +63,12 @@ const mkGetBlock = async input => {
   return { reader, root: roots[0], getBlock }
 }
 
-const writer = async (cid, filename) => {
+const writer = async (cid) => {
   const { writer, out } = await CarWriter.create([cid])
   const stream = Readable.from(out)
-  const put = block => { 
+  const put = block => {
     if (!CID.asCID(block.cid)) throw new Error('here ' + block.cid)
-    return writer.put(block) 
+    return writer.put(block)
   }
   const close = () => writer.close()
   return { put, close, stream }

@@ -1,5 +1,8 @@
 /* globals describe, it, before */
 import assert from 'assert'
+import fs from 'fs'
+import { PassThrough } from 'stream'
+import tempfile from 'tempfile'
 import { encode, decode, mkGetBlock, writer } from '../src/ipld.js'
 
 describe('ipld', () => {
@@ -14,36 +17,46 @@ describe('ipld', () => {
   })
 
   it('decode', async () => {
-    // console.log(block)
-    // const byteView = new DataView(block.bytes.buffer, 0)
-    // const decoded = decode(block.bytes, block.cid)
-    // console.log(decoded)
+    const decoded = await decode(block.bytes, block.cid)
+    assert.equal(decoded.cid.toString(), 'bafyreif6wvo5txz35pv5vnungtazalvmmdhes3hopaqopjb63gvwwovlwy')
+    assert.equal(decoded.value.anything, 'goes')
+    assert.equal(decoded.bytes.length, 15)
   })
 
   describe('writer', () => {
-    let w
+    let w, mockedStream, tempfileName
+    const chunks = []
     before(async () => {
+      tempfileName = tempfile()
+      mockedStream = fs.createWriteStream(tempfileName)
+      //   mockedStream = new PassThrough()
+      mockedStream.on('data', (chunk) => { chunks.push(chunk) })
       w = await writer(block.cid)
+      w.stream.pipe(mockedStream)
+      await w.put(block)
+      await w.close()
     })
-    it('base', async () => {
-      assert(w.put)
-      assert(w.close)
-      assert(w.stream)
+    it('worked', async () => {
+      const data = fs.readFileSync(tempfileName)
+      assert.match(data.toString(), /anything/)
     })
-    it('put', async () => {
-      const r = await w.put(block)
-    //   console.log(r)
+    describe('mkGetBlock', () => {
+      let rdr
+      before(async () => {
+        rdr = await mkGetBlock(tempfileName)
+      })
+      it('returns reader', () => {
+        assert(rdr.reader)
+        assert(rdr.root)
+        assert(rdr.getBlock)
+        assert.equal(rdr.root.toString(), 'bafyreif6wvo5txz35pv5vnungtazalvmmdhes3hopaqopjb63gvwwovlwy')
+      })
+      it('can get blocks', async () => {
+        const block = await rdr.getBlock(rdr.root)
+        assert.equal(block.cid.toString(), 'bafyreif6wvo5txz35pv5vnungtazalvmmdhes3hopaqopjb63gvwwovlwy')
+        assert.equal(block.value.anything, 'goes')
+        assert.equal(block.bytes.length, 15)
+      })
     })
-    it('close', async () => {
-      const cl = await w.close()
-    //   console.log(cl)
-    })
-    it('stream', async () => {
-    //   console.log(w.stream)
-    })
-  })
-
-  it('mkGetBlock', () => {
-    // TODO make a car file fixture
   })
 })
