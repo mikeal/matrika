@@ -90,6 +90,27 @@ describe('base', () => {
     })
   })
 
+  describe('list all start/end', () => {
+    let list
+    before('make list', async () => {
+      list = await ls({ getBlock, kv: rootCID, start: 'd', end: 'f' })
+    })
+    it('result keys', () => {
+      assert.equal(list.result.length, 2)
+      assert.equal(list.result[0].key, 'd')
+      assert.equal(list.result[1].key, 'e')
+    })
+    it('result value functions', async () => {
+      assert.equal(await list.result[0].value(), 40)
+      assert.equal(await list.result[1].value(), 50)
+    })
+    it('result cid set', () => {
+      assert.equal(list.cids.size, 2)
+      assert(list.cids.has(blocks[4].cid.toString()))
+      assert(list.cids.has(blocks[6].cid.toString()))
+    })
+  })
+
   describe('list all includeValues', () => {
     let list
     before('make list', async () => {
