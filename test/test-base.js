@@ -58,7 +58,7 @@ describe('base', () => {
       assert.equal(await list.result[1].value(), 20)
     })
     it('result cid set', () => {
-      assert.equal(list.cids.size, 1)
+      assert.equal(list.cids.size, 'x')
       assert.equal(list.cids.values().next().value, blocks[2].cid.toString())
     })
   })
