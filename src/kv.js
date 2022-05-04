@@ -63,7 +63,7 @@ const mapLoader = async ({ kv, getBlock }) => {
 
 const prepareMap = o => Object.keys(o).map(k => ({ key: k, value: prepare(o[k]) }))
 
-const targetSize = 3 // TODO: don't ship with this default
+const DEFAULT_TARGET_SIZE = 3 // TODO: don't ship with this default
 
 const trycid = string => {
   try {
@@ -73,7 +73,7 @@ const trycid = string => {
   }
 }
 
-const create = async function * (map) {
+const create = async function * (map, targetSize = DEFAULT_TARGET_SIZE) {
   const changes = []
   for (const [key, value] of Object.entries(map)) {
     let cid = trycid(value)

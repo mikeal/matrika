@@ -9,7 +9,7 @@ describe('base', () => {
   const blockMap = {}
 
   before('create blocks', async () => {
-    for await (const block of create(fixtureMap)) {
+    for await (const block of create(fixtureMap, 3)) {
       blocks.push(block)
       blockMap[block.cid.toString()] = block
     }
