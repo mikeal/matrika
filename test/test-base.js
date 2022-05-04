@@ -58,8 +58,34 @@ describe('base', () => {
       assert.equal(await list.result[1].value(), 20)
     })
     it('result cid set', () => {
-      assert.equal(list.cids.size, 'x')
-      assert.equal(list.cids.values().next().value, blocks[2].cid.toString())
+      assert.equal(list.cids.size, 2)
+      assert(list.cids.has(blocks[2].cid.toString()))
+      assert(list.cids.has(blocks[4].cid.toString()))
+    })
+  })
+
+  describe('list all includeValues', () => {
+    let list, rootCID
+    before('make list', async () => {
+      rootCID = blocks[4].cid
+      const getBlock = async (cid) => blockMap[cid.toString()]
+      list = await ls({ getBlock, kv: rootCID, includeValues: true })
+    })
+    it('result keys', () => {
+      assert.equal(list.result.length, 2)
+      assert.equal(list.result[0].key, 'a')
+      assert.equal(list.result[1].key, 'b')
+    })
+    it('result values', async () => {
+      assert.equal(await list.result[0].value, 10)
+      assert.equal(await list.result[1].value, 20)
+    })
+    it('result cid set', () => {
+      assert.equal(list.cids.size, 4)
+      assert(list.cids.has(blocks[0].cid.toString()))
+      assert(list.cids.has(blocks[1].cid.toString()))
+      assert(list.cids.has(blocks[2].cid.toString()))
+      assert(list.cids.has(blocks[4].cid.toString()))
     })
   })
 })

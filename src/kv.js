@@ -126,7 +126,7 @@ const ls = async ({ kv, getBlock, start, end, includeValues }) => {
   } else {
     result = await Promise.all(result.map(async r => {
       const block = await getBlock(r.value)
-      cids.add(block.cid)
+      cids.add(block.cid.toString())
       return { key: r.key, value: decorate(getBlock, block.value) }
     }))
   }
