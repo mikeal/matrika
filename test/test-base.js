@@ -49,7 +49,6 @@ describe('base', () => {
       list = await ls({ getBlock, kv: rootCID })
     })
     it('result keys', () => {
-      console.log(list)
       assert.equal(list.result.length, 2)
       assert.equal(list.result[0].key, 'a')
       assert.equal(list.result[1].key, 'b')
@@ -59,7 +58,6 @@ describe('base', () => {
       assert.equal(await list.result[1].value(), 20)
     })
     it('result cid set', () => {
-      console.log(blocks[2].value)
       assert.equal(list.cids.size, 1)
       assert.equal(list.cids.values().next().value, blocks[2].cid.toString())
     })
