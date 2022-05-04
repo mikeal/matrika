@@ -31,10 +31,10 @@ const lsCommand = async argv => {
   if (argv.proof) {
     const resultBlock = await encode(result)
     const query = { ls: { start: !!start, end: !!end, rendered: !!argv.renderValues } }
-    const head = { result: result.cid, kv: root, query, _type: 'matrika:query:ls:v1' }
+    const head = { result: resultBlock.cid, kv: root, query, _type: 'matrika:query:ls:v1' }
     const headBlock = await encode(head)
     const blocks = [ resultBlock, headBlock ]
-    await writeProof({ root: headBlock.cid, cids, getBlock, blocks })
+    await writeProof({ root: headBlock.cid, cids, getBlock, blocks, argv })
   } else {
     for (const r of result) {
       console.log(r)

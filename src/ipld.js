@@ -49,6 +49,8 @@ const mkGetBlock = async input => {
   const reader = await CarReader.fromBytes(readFileSync(input))
   const roots = await reader.getRoots()
   const getBlock = async cid => {
+    if (typeof cid === 'string') cid = CID.parse(cid)
+    console.log({ cid })
     if (await reader.has(cid)) {
       const { bytes } = await reader.get(cid)
       if (cid.code === 113) {
@@ -65,7 +67,10 @@ const mkGetBlock = async input => {
 const writer = async (cid, filename) => {
   const { writer, out } = await CarWriter.create([cid])
   const stream = Readable.from(out)
-  const put = block => writer.put(block)
+  const put = block => { 
+    if (!CID.asCID(block.cid)) throw new Error('here ' + block.cid)
+    return writer.put(block) 
+  }
   const close = () => writer.close()
   return { put, close, stream }
 }

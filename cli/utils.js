@@ -42,7 +42,7 @@ const output = async (argv, blocks) => {
   close()
 }
 
-const writeProof = async ({ blocks, cids, getBlock, root }) => {
+const writeProof = async ({ blocks, cids, getBlock, root, argv }) => {
   const { put, close, stream } = await writer(root)
   if (!argv.outfile) {
     stream.pipe(process.stdout)
@@ -54,6 +54,8 @@ const writeProof = async ({ blocks, cids, getBlock, root }) => {
     promises.push(put(block))
   }
   ;[ ...cids ].forEach(cid => promises.push(getBlock(cid).then(put)))
+
+  await Promise.all(promises)
 
   close()
 }
