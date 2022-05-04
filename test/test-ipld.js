@@ -16,15 +16,31 @@ describe('ipld', () => {
   it('decode', async () => {
     // console.log(block)
     // const byteView = new DataView(block.bytes.buffer, 0)
-    const decoded = decode(block.bytes, block.cid)
+    // const decoded = decode(block.bytes, block.cid)
     // console.log(decoded)
   })
 
-  it('writer', async () => {
-    const w = await writer(block.cid)
-    assert(w.put)
-    assert(w.close)
-    assert(w.stream)
+  describe('writer', () => {
+    let w
+    before(async () => {
+      w = await writer(block.cid)
+    })
+    it('base', async () => {
+      assert(w.put)
+      assert(w.close)
+      assert(w.stream)
+    })
+    it('put', async () => {
+      const r = await w.put(block)
+      console.log(r)
+    })
+    it('close', async () => {
+      const cl = await w.close()
+      console.log(cl)
+    })
+    it('stream', async () => {
+      console.log(w.stream)
+    })
   })
 
   it('mkGetBlock', () => {
