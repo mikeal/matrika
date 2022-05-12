@@ -76,4 +76,20 @@ const writer = async (cid, filename) => {
   return { put, close, stream }
 }
 
-export { encode, decode, mkGetBlock, writer, getBlockGateway }
+const getBlockGlobal = getBlockGateway
+
+const dedup = blocks => {
+  /* dedup blocks while maintaining last block (potentially a root) placement */
+  const set = new Set()
+  const last = blocks.pop()
+  set.add(last.cid.toString())
+  const filtered = blocks.filter(block => {
+    const s = block.cid.toString()
+    if (set.has(s)) return false
+    set.add(s)
+    return true
+  })
+  return [ ...filtered, last ]
+}
+
+export { encode, decode, mkGetBlock, writer, getBlockGateway, getBlockGlobal, dedup }

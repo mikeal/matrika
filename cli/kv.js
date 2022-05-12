@@ -3,9 +3,14 @@ import { readFileSync } from 'fs'
 import { create, update, ls, get, set } from '../src/kv.js'
 import yargs from 'yargs'
 import { CID } from 'multiformats'
-import { prepare } from '../src/sugar.js'
+import { serialize } from '../src/sugar.js'
 import { mayberun, fixargv, reader, output, readDefaults, writeDefaults, writeProof } from './utils.js'
 import { encode, decode } from '../src/ipld.js'
+
+const prepare = async obj => {
+  const blocks = await serialize(obj)
+  return blocks[blocks.length -1].value
+}
 
 const createCommand = async argv => {
   const map = JSON.parse(argv.json)
@@ -23,7 +28,7 @@ const lsCommand = async argv => {
   const { result, cids } = await ls({ getBlock, kv: root, start, end, includeValues })
   for (const r of result) {
     if (argv.renderValues) {
-      r.value = prepare(r.value)
+      r.value = await prepare(r.value)
     } else {
       r.value = r.value.cid
     }

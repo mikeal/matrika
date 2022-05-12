@@ -1,4 +1,4 @@
-import { prepare, decorate } from './sugar.js'
+import { serialize, decorate } from './sugar.js'
 import { CID } from 'multiformats'
 import { encode } from './ipld.js'
 import { create as createMap, load } from 'prolly-trees/map'
@@ -62,8 +62,6 @@ const mapLoader = async ({ kv, getBlock }) => {
   return load({ cid: block.value.map, get: getBlock, chunker: bf(block.value.targetSize), ...treeopts })
 }
 
-const prepareMap = o => Object.keys(o).map(k => ({ key: k, value: prepare(o[k]) }))
-
 const DEFAULT_TARGET_SIZE = 3 // TODO: don't ship with this default
 
 const trycid = string => {
@@ -82,13 +80,25 @@ const create = async function * (map, targetSize = DEFAULT_TARGET_SIZE) {
   for (const [key, value] of Object.entries(map)) {
     let cid = trycid(value)
     if (!cid) {
-      const block = await encode(value)
-      yield block
-      cid = block.cid
+      const blocks = await serialize(value)
+      cid = blocks[blocks.length -1].cid
+      yield * blocks
     }
     changes.push({ key, value: cid })
   }
   yield * transform({ changes, targetSize })
+}
+
+const prepareChanges = async changes => {
+  let blocks = []
+  for (const c of changes) {
+    let { key, value, del } = c
+    if (!CID.asCID(value)) {
+      blocks = [ ...blocks, ...await serialize(value) ]
+      c.value = blocks[blocks.length -1].cid
+    }
+  }
+  return blocks
 }
 
 const update = async function * ({ kv, prev, getBlock, changes, ...options }) {
@@ -101,16 +111,8 @@ const update = async function * ({ kv, prev, getBlock, changes, ...options }) {
     throw new Error('not implemented')
   }
 
-  for (const c of changes ) {
-    let { key, value, del } = c
-    value = prepare(value)
-    if (!CID.asCID(value)) {
-      const block = await encode(value)
-      value = block.cid
-      yield block
-    }
-    c.value = value
-  }
+  const blocks = await prepareChanges(changes)
+  yield * blocks
 
   const result = await node.bulk(changes)
 
@@ -152,7 +154,7 @@ const ls = async ({ kv, getBlock, start, end, includeValues }) => {
     result = await Promise.all(result.map(async r => {
       const block = await getBlock(r.value)
       cids.add(block.cid.toString())
-      return { key: r.key, value: decorate(getBlock, block.value) }
+      return { key: r.key, value: decorate(getBlock, block.value, block) }
     }))
   }
   return { cids, result }
@@ -171,5 +173,89 @@ const set = async function * ({ key, value, kv, getBlock, prev }) {
   const changes = [ { key, value } ]
   yield * update({ changes, kv, getBlock, prev })
 }
+
+class KVUpdate {
+  constructor (kv) {
+    this.kv = kv
+    this.blocks = {}
+    this.getBlock = cid => this._getBlock(cid)
+    this.getBlock._blocksref = this.blocks
+  }
+  async _getBlock (cid) {
+    if (this.blocks[cid.toString()]) return this.blocks[cid.toString()]
+    return this.kv.getBlock(cid)
+  }
+  put (block) {
+    this.last = block
+    this.blocks[blocks.cid.toString()] = block
+  }
+  kv () {
+    return new KV(this.last.cid, this.getBlock)
+  }
+}
+
+class KV {
+  constructor (cid, getBlock) {
+    this.cid = cid
+    this.getBlock = getBlock
+    this.loaded = this.load()
+  }
+  static async create ({ map, getBlock, targetSize }) {
+    const update = new KVUpdate({ getBlock })
+    for await (const block of create(map, targetSize)) {
+      update.put(block)
+    }
+    return update.kv()
+  }
+  async load () {
+    const head = await getBlock(kv)
+    const { targetSize } = head.value
+    const chunker = bf(targetSize)
+    const node = await load({ cid: head.value.map, get: getBlock, chunker, ...treeopts })
+    this.head = head
+    this.node = node
+    return true
+  }
+  async get (key, value=true) {
+    await this.load()
+    const { result } = await this.node.get(key)
+    if (value) {
+      const block = await this.getBlock(result)
+      return decorate(this.getBlock, block.value, block)
+    }
+    return result
+  }
+  async bulk (changes) {
+    await this.load()
+    const update = new KVUpdate(this)
+    await blocks = await prepareChanges(changes)
+    blocks.forEach(b => update.put(b))
+
+    const result = await node.bulk(changes)
+    rseult.blocks.forEach(b => update.put(b))
+
+    const changesBlock = await encode(changes)
+    update.put(changesBlock)
+    
+    const newHead = await encode({
+      _type: 'matrika:kv:v1',
+      prev: kv,
+      map: await result.root.address,
+      changes: changesBlock.cid,
+      targetSize
+    })
+    update.put(newHead)
+    return update
+  }
+  async set (key, value) {
+    const changes = [ { key, value } ]
+    return this.bulk(changes)
+  }
+  async del (key) {
+    const changes = [ { key, del: true } ]
+    return this.bulk(changes)
+  }
+}
+
 
 export { create, update, ls, get, set }
