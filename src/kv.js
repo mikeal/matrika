@@ -29,7 +29,7 @@ const transform = async function * ({ kv, changes, getBlock, targetSize }) {
   if (!kv) {
     kv = null
     iter = createMap({ get, list, chunker, ...treeopts })
-  } else { 
+  } else {
     const head = await get(kv)
     root = await load({ cid: head.value.map, get, chunker, ...treeopts })
     console.log(root)
@@ -44,7 +44,7 @@ const transform = async function * ({ kv, changes, getBlock, targetSize }) {
   const changesBlock = await encode(list)
   put(changesBlock)
   yield changesBlock
-  
+
   const head = await encode({
     _type: 'matrika:kv:v1',
     prev: kv,
@@ -76,7 +76,7 @@ const trycid = string => {
 
 const create = async function * (map, targetSize = DEFAULT_TARGET_SIZE) {
   if (targetSize < 2) {
-    throw new RangeError("targetSize must be greater than 1")
+    throw new RangeError('targetSize must be greater than 1')
   }
   const changes = []
   for (const [key, value] of Object.entries(map)) {
@@ -101,7 +101,7 @@ const update = async function * ({ kv, prev, getBlock, changes, ...options }) {
     throw new Error('not implemented')
   }
 
-  for (const c of changes ) {
+  for (const c of changes) {
     let { key, value, del } = c
     value = prepare(value)
     if (!CID.asCID(value)) {
@@ -116,12 +116,12 @@ const update = async function * ({ kv, prev, getBlock, changes, ...options }) {
 
   const { fromEntries, values } = Object
 
-  const blocks = values(fromEntries(result.blocks.map(b => [ b.cid.toString(), b ])))
+  const blocks = values(fromEntries(result.blocks.map(b => [b.cid.toString(), b])))
   yield * blocks
 
   const changesBlock = await encode(changes)
   yield changesBlock
-  
+
   const newHead = await encode({
     _type: 'matrika:kv:v1',
     prev: kv,
@@ -136,11 +136,11 @@ const ls = async ({ kv, getBlock, start, end, includeValues }) => {
   const node = await mapLoader({ kv, getBlock })
   let cids, result
   if (start) {
-    const r = await node.getRangeEntries(start, end) 
+    const r = await node.getRangeEntries(start, end)
     cids = r.cids._cids
     result = r.result
   } else {
-    const r = await node.getAllEntries() 
+    const r = await node.getAllEntries()
     cids = r.cids._cids
     result = r.result
   }
@@ -168,7 +168,7 @@ const get = async ({ key, kv, getBlock }) => {
   return decorate(getBlock, result)
 }
 const set = async function * ({ key, value, kv, getBlock, prev }) {
-  const changes = [ { key, value } ]
+  const changes = [{ key, value }]
   yield * update({ changes, kv, getBlock, prev })
 }
 

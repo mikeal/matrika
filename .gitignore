@@ -10,3 +10,4 @@ types
 test/ts-use/tsconfig.tsbuildinfo
 test/tsconfig.tsbuildinfo
 test.car
+.env
