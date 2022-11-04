@@ -1,7 +1,6 @@
 /* globals describe, it, before */
 import assert from 'assert'
 import fs from 'fs'
-import { PassThrough } from 'stream'
 import tempfile from 'tempfile'
 import { encode, decode, mkGetBlock, writer } from '../src/ipld.js'
 

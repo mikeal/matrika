@@ -147,6 +147,14 @@ describe('base', () => {
       const value = await result()
       assert.equal(ogBlock.value, value)
     })
+
+    it('returns error for empty', async () => {
+      const result = await get({ getBlock, kv: rootCID, key: 'zzz' })
+      const ogBlock = blockMap[result.cid.toString()]
+      const value = await result()
+      console.log('notffff', value)
+      assert.equal(ogBlock.value, value)
+    })
   })
 
   describe('set key', () => {

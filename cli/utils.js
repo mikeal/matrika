@@ -1,7 +1,6 @@
 import { hideBin } from 'yargs/helpers'
-import { mkGetBlock, getBlockGateway } from '../src/ipld.js'
+import { mkGetBlock, getBlockGateway , writer } from '../src/ipld.js'
 import { CID } from 'multiformats'
-import { writer } from '../src/ipld.js'
 import { createWriteStream } from 'fs'
 import bent from 'bent'
 
@@ -16,7 +15,7 @@ const fixargv = () => {
   if (argv.length === 1) argv = []
   if (argv.length >= 2) {
     if (!argv[0].includes('-')) {
-      argv = [ argv.slice(0,2).join('-'), ...argv.slice(2) ]
+      argv = [argv.slice(0, 2).join('-'), ...argv.slice(2)]
     }
   }
   return argv
@@ -28,9 +27,9 @@ const reader = async (input, root) => {
   }
   let getBlock
   if (input) {
-    const r =  await mkGetBlock(input)
+    const r = await mkGetBlock(input)
     getBlock = r.getBlock
-    if (!root) root = r.root 
+    if (!root) root = r.root
   } else {
     if (!root) throw new Error('Must pass a root if not providing a CAR file')
     getBlock = getBlockGateway
@@ -42,12 +41,12 @@ const post = bent('POST', 'json')
 const w3s = 'https://api.web3.storage/car'
 
 const output = async (argv, blocks) => {
-  const root = blocks[blocks.length -1]
+  const root = blocks[blocks.length - 1]
   const { put, close, stream } = await writer(root.cid)
   let response
   if (argv.outfile) {
     stream.pipe(createWriteStream(argv.outfile))
-  } else if (argv.publish) { 
+  } else if (argv.publish) {
     const token = process.env.W3S_API_TOKEN
     if (!token) throw new Error('Must set W3S_API_TOKEN env variable to publish to web3.storage')
     const headers = { Authorization: `Bearer ${token}` }
@@ -76,7 +75,7 @@ const writeProof = async ({ blocks, cids, getBlock, root, argv }) => {
   for (const block of blocks) {
     promises.push(put(block))
   }
-  ;[ ...cids ].forEach(cid => promises.push(getBlock(cid).then(put)))
+  ;[...cids].forEach(cid => promises.push(getBlock(cid).then(put)))
 
   await Promise.all(promises)
 
